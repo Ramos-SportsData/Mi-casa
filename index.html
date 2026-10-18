@@ -49,7 +49,7 @@ textarea{width:100%;padding:12px;border-radius:10px;border:1px solid var(--ln);b
 <div class="toast" id="toast"></div>
 <script>
 var API='https://kxlhflysvyerwriqkahb.supabase.co/functions/v1/api';
-var code=localStorage.getItem('mc_code')||'',cats=['Comedor','Cocina','Televisiones','Mesas','Camas','Iluminación'],items=[],notes=[],curNote=null,rt=0,open={},fp='',err='',q='';
+var code=localStorage.getItem('mc_code')||'',cats=['Cocina Comedor Salón','Habitación grande','Habitación armarios','habitacion pequeña','baño pasillo','baño habitación'],items=[],notes=[],curNote=null,rt=0,open={},fp='',err='',q='';
 try{var cc=JSON.parse(localStorage.getItem('mc_cache')||'null');if(cc){cats=cc.cats;items=cc.items;notes=cc.notes||[]}}catch(e){}
 try{open=JSON.parse(localStorage.getItem('mc_open')||'{}')}catch(e){}
 function esc(t){return String(t==null?'':t).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
