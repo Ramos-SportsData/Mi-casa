@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1f6b4a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Mi Casa</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏠</text></svg>">
+<style>
+:root{--bg:#f6f4f0;--card:#fff;--tx:#1d1d1b;--mut:#77736b;--ac:#1f6b4a;--ln:#e5e1d9;color-scheme:light}
+@media (prefers-color-scheme:dark){:root{--bg:#151513;--card:#222220;--tx:#f1eee8;--mut:#9b968c;--ac:#4fc08c;--ln:#33332f;color-scheme:dark}}
+*{box-sizing:border-box}html,body{margin:0}
+body{background:var(--bg);color:var(--tx);font:16px/1.4 -apple-system,"Segoe UI",Roboto,sans-serif;padding:env(safe-area-inset-top) 0 calc(96px + env(safe-area-inset-bottom))}
+header{padding:20px 16px 8px}h1{margin:0;font-size:26px}header p{margin:4px 0 0;color:var(--mut);font-size:14px}
+.cat{margin:10px 12px;background:var(--card);border:1px solid var(--ln);border-radius:14px;overflow:hidden}
+.cat>button{all:unset;display:flex;width:100%;padding:16px;align-items:center;justify-content:space-between;font-weight:600;font-size:17px;cursor:pointer;box-sizing:border-box}
+.cat>button span{color:var(--mut);font-weight:400;font-size:14px}
+.arrow{display:inline-block;transition:transform .2s;margin-left:10px}.cat.open .arrow{transform:rotate(180deg)}
+.body{display:none;padding:0 0 12px}.cat.open .body{display:block}
+.empty{color:var(--mut);font-size:14px;padding:0 16px 6px}
+.row{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;padding:0 12px;scrollbar-width:none}.row::-webkit-scrollbar{display:none}
+.prod{flex:0 0 74%;max-width:300px;scroll-snap-align:start;border:1px solid var(--ln);border-radius:12px;overflow:hidden;background:var(--bg)}
+.prod img,.ph{width:100%;aspect-ratio:4/3;object-fit:cover;display:block;background:var(--ln)}
+.ph{display:flex;align-items:center;justify-content:center;color:var(--mut);font-size:14px}
+.info{padding:10px 12px 12px}.store{font-size:12px;color:var(--mut);text-transform:uppercase;letter-spacing:.04em}
+.name{font-weight:600;margin:2px 0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.price{color:var(--ac);font-weight:700;font-size:18px;min-height:1px}
+.acts{display:flex;gap:8px;margin-top:10px}
+.btn{flex:1;text-align:center;padding:11px;border-radius:10px;background:var(--ac);color:#fff;text-decoration:none;font-weight:600;border:0;font-size:15px;font-family:inherit}
+.btn.sec{flex:0 0 auto;background:transparent;color:var(--mut);border:1px solid var(--ln);padding:11px 13px}
+.btn:disabled{opacity:.6}
+.fab{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));background:var(--ac);color:#fff;border:0;border-radius:28px;padding:15px 22px;font-size:16px;font-weight:700;box-shadow:0 4px 14px #0004;font-family:inherit}
+.sheet{position:fixed;inset:0;background:#0007;display:none;align-items:flex-end;z-index:20}.sheet.show{display:flex}
+.panel{background:var(--card);width:100%;max-height:92%;overflow:auto;border-radius:20px 20px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom))}
+.panel h2{margin:0 0 6px}label{display:block;font-size:13px;color:var(--mut);margin:10px 0 4px}
+input,select{width:100%;padding:12px;border-radius:10px;border:1px solid var(--ln);background:var(--bg);color:var(--tx);font-size:16px;font-family:inherit}
+details{margin-top:10px;color:var(--mut);font-size:14px}
+.login{max-width:360px;margin:18vh auto 0;padding:0 20px;text-align:center}.login .btn{width:100%;margin-top:12px}
+.toast{position:fixed;left:16px;right:16px;bottom:calc(84px + env(safe-area-inset-bottom));background:#222;color:#fff;padding:12px 14px;border-radius:12px;font-size:14px;display:none;z-index:30}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div class="toast" id="toast"></div>
+<script>
+var API='https://kxlhflysvyerwriqkahb.supabase.co/functions/v1/api';
+var code=localStorage.getItem('mc_code')||'',cats=['Sofás','Armarios','Televisiones','Mesas','Camas','Iluminación'],items=[],open={},fp='',err='',q='';
+try{var cc=JSON.parse(localStorage.getItem('mc_cache')||'null');if(cc){cats=cc.cats;items=cc.items}}catch(e){}
+try{open=JSON.parse(localStorage.getItem('mc_open')||'{}')}catch(e){}
+function esc(t){return String(t==null?'':t).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function toast(m){var t=document.getElementById('toast');t.textContent=m;t.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(function(){t.style.display='none'},4500)}
+function call(action,data){
+  var b=Object.assign({action:action,code:code},data||{});
+  return fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}).then(function(r){return r.json().then(function(j){if(!r.ok){var e=new Error(j.error||'error');e.code=j.error;throw e}return j})});
+}
+function showLogin(msg){
+  document.getElementById('app').innerHTML='<div class="login"><h1>🏠 Mi Casa</h1><p style="color:var(--mut)">Escribe el código que compartís los dos</p><input id="cd" placeholder="casa-xxxxxx" autocapitalize="off" autocomplete="off"><button class="btn" onclick="login()">Entrar</button><p style="color:#c0392b;font-size:14px">'+esc(msg||'')+'</p></div>';
+}
+function login(){
+  code=document.getElementById('cd').value.trim();
+  call('check').then(function(){localStorage.setItem('mc_code',code);start()}).catch(function(){showLogin('Código incorrecto')});
+}
+function logout(){localStorage.removeItem('mc_code');code='';clearInterval(start.t);showLogin()}
+function layout(){
+  document.getElementById('app').innerHTML='<header><h1>🏠 Mi Casa</h1><p>Pega enlaces de cualquier tienda: yo saco foto, nombre y precio. <a href="#" onclick="logout();return false" style="color:var(--mut)">Salir</a></p></header><div style="padding:4px 12px"><input id="q" type="search" placeholder="Buscar en mis productos…" oninput="q=this.value;render()"></div><div id="err"></div><main id="list"></main><button class="fab" onclick="openSheet()">+ Añadir enlace</button>'+
+  '<div class="sheet" id="sheet" onclick="if(event.target===this)closeSheet()"><div class="panel"><h2>Nuevo producto</h2><label>Enlace de la tienda</label><input id="url" type="url" placeholder="https://..." inputmode="url"><label>Categoría</label><select id="ct"></select>'+
+  '<details><summary>Datos manuales (opcional)</summary><label>Nombre</label><input id="nm"><label>Precio</label><input id="pr" placeholder="799 €"><label>URL de la imagen</label><input id="im" type="url" placeholder="https://...jpg"></details>'+
+  '<div class="acts" style="margin-top:16px"><button class="btn sec" onclick="closeSheet()">Cancelar</button><button class="btn" id="sv" onclick="save()">Guardar</button></div>'+
+  '<div class="acts"><button class="btn sec" style="width:100%" onclick="newCat()">+ Nueva categoría</button></div></div></div>';
+}
+function render(){
+  var h='';
+  cats.forEach(function(c,ci){
+    var its=items.filter(function(i){return i.category===c&&(!q||(i.title+' '+i.store).toLowerCase().indexOf(q.toLowerCase())>=0)});
+    h+='<section class="cat'+(open[c]?' open':'')+'"><button onclick="tog('+ci+')">'+esc(c)+'<span>'+its.length+'<b class="arrow">⌄</b></span></button><div class="body">';
+    if(!its.length)h+='<div class="empty">Aún no hay nada aquí.</div>';
+    else{h+='<div class="row">';its.forEach(function(i){
+      h+='<article class="prod">'+(i.image?'<img src="'+esc(i.image)+'" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.outerHTML=\'<div class=ph>Sin foto</div>\'">':'<div class="ph">Sin foto</div>')+
+      '<div class="info"><div class="store">'+esc(i.store)+'</div><div class="name">'+esc(i.title)+'</div><div class="price">'+esc(i.price)+'</div>'+
+      '<div class="acts"><a class="btn" href="'+esc(i.url)+'" target="_blank" rel="noopener">Ver en tienda</a><button class="btn sec" onclick="edit(\''+i.id+'\')">✏️</button><button class="btn sec" onclick="del(\''+i.id+'\')">🗑</button></div></div></article>';
+    });h+='</div>'}
+    h+='</div></section>';
+  });
+  var m=document.getElementById('list');if(m)m.innerHTML=h;var e=document.getElementById('err');if(e)e.innerHTML=err?'<div class="cat" style="padding:14px;border-color:#c0392b"><b>⚠️ No puedo conectar con el servidor.</b><div style="color:var(--mut);font-size:14px;margin:4px 0 10px">'+esc(err)+' Abre esta web desde su enlace normal en el navegador (Safari/Chrome), no desde una vista previa.</div><button class="btn" onclick="refresh(true)">Reintentar</button></div>':'';
+}
+function tog(i){var c=cats[i];open[c]=!open[c];try{localStorage.setItem('mc_open',JSON.stringify(open))}catch(e){}render()}
+function refresh(force){
+  if(document.hidden&&!force)return Promise.resolve();
+  return call('list').then(function(d){err='';var f=JSON.stringify(d);if(f!==fp){fp=f;cats=d.cats;items=d.items;try{localStorage.setItem('mc_cache',JSON.stringify(d))}catch(x){}}render()}).catch(function(e){err=e.code?('Error: '+e.code+'.'):'La petición no llega al servidor.';render()});
+}
+function start(){layout();fp='';render();refresh(true);clearInterval(start.t);start.t=setInterval(refresh,6000)}
+function fillCats(sel){var s=document.getElementById('ct');s.innerHTML=cats.map(function(c){return '<option>'+esc(c)+'</option>'}).join('');if(sel)s.value=sel}
+function openSheet(){fillCats();['url','nm','pr','im'].forEach(function(k){document.getElementById(k).value=''});document.getElementById('sheet').classList.add('show')}
+function closeSheet(){document.getElementById('sheet').classList.remove('show')}
+function newCat(){var n=prompt('Nombre de la categoría');n=n&&n.trim();if(!n)return;call('addCat',{name:n}).then(function(){return refresh(true)}).then(function(){fillCats(n)}).catch(function(){toast('No se pudo crear (¿ya existe?)')})}
+function save(){
+  var u=document.getElementById('url').value.trim();
+  if(!/^https?:\/\//i.test(u)){toast('Pega un enlace que empiece por http');return}
+  var b=document.getElementById('sv'),cat=document.getElementById('ct').value;
+  b.disabled=true;b.textContent='Leyendo enlace…';
+  call('add',{url:u,category:cat,title:document.getElementById('nm').value,price:document.getElementById('pr').value,image:document.getElementById('im').value}).then(function(d){
+    open[cat]=true;try{localStorage.setItem('mc_open',JSON.stringify(open))}catch(e){}
+    closeSheet();refresh(true);
+    if(!d.found.image)toast('No pude sacar la foto de esa tienda. Pulsa ✏️ y pega la URL de una imagen.');
+    else if(!d.found.price)toast('Guardado. No encontré el precio: puedes ponerlo con ✏️.');
+  }).catch(function(){toast('No se pudo guardar. Revisa el enlace.')}).then(function(){b.disabled=false;b.textContent='Guardar'});
+}
+function edit(id){
+  var it=items.filter(function(i){return i.id===id})[0];if(!it)return;
+  var t=prompt('Nombre',it.title);if(t===null)return;
+  var p=prompt('Precio',it.price);if(p===null)return;
+  var im=prompt('URL de la imagen',it.image);if(im===null)return;
+  call('update',{id:id,title:t,price:p,image:im}).then(function(){refresh(true)}).catch(function(){toast('No se pudo guardar')});
+}
+function del(id){if(confirm('¿Borrar este producto?'))call('del',{id:id}).then(function(){refresh(true)}).catch(function(){toast('No se pudo borrar')})}
+document.addEventListener('visibilitychange',function(){if(!document.hidden&&code)refresh(true)});
+if(code)start();else showLogin();
+</script>
+</body>
+</html>
