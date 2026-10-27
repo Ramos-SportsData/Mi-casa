@@ -67,7 +67,7 @@ function login(){code=$('cd').value.trim();call('check').then(function(){localSt
 function logout(){localStorage.removeItem('mc_code');code='';clearInterval(start.t);showLogin()}
 function layout(){
   $('app').innerHTML='<header><h1>🏠 Mi Casa</h1><p>Pega enlaces de cualquier tienda: yo saco foto, nombre y precio. <a href="#" onclick="logout();return false" style="color:var(--mut)">Salir</a></p></header>'+
-  '<div style="padding:4px 12px"><input id="q" type="search" placeholder="Buscar en mis productos…" oninput="q=this.value;render()"></div><div id="err"></div><main id="list"></main><button class="fab" onclick="openSheet()">+ Añadir enlace</button>'+
+  '<div style="padding:4px 12px"><input id="q" type="search" placeholder="Buscar en mis productos…" oninput="q=this.value;render()"></div><div id="err"></div><main id="list"></main><button class="fab" onclick="openSheet()">+ Añadir enlace</button><button class="fab" style="left:16px;right:auto;background:var(--card);color:var(--tx);border:1px solid var(--ln)" onclick="Casa3D.open()">🧊 Casa 3D</button>'+
   '<div class="sheet" id="sheet" onclick="if(event.target===this)closeSheet()"><div class="panel"><h2>Nuevo producto</h2><label>Enlace de la tienda</label><input id="url" type="url" placeholder="https://..." inputmode="url"><label>Categoría</label><select id="ct"></select>'+
   '<details><summary>Datos manuales (opcional)</summary><label>Nombre</label><input id="nm"><label>Precio</label><input id="pr" placeholder="799 €"><label>URL de la imagen</label><input id="im" type="url" placeholder="https://...jpg"></details>'+
   '<div class="acts" style="margin-top:16px"><button class="btn sec" onclick="closeSheet()">Cancelar</button><button class="btn" id="sv" onclick="save()">Guardar</button></div></div></div>'+
@@ -89,7 +89,7 @@ function summ(id){
 function card(i){
   return '<article class="prod">'+(i.image?'<img src="'+esc(i.image)+'" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.outerHTML=\'<div class=ph>Sin foto</div>\'">':'<div class="ph">Sin foto</div>')+
   '<div class="info"><div class="store">'+esc(i.store)+'</div><div class="name">'+esc(i.title)+'</div><div class="price">'+esc(i.price)+'</div>'+summ(i.id)+
-  '<div class="acts"><a class="btn" href="'+esc(i.url)+'" target="_blank" rel="noopener">Ver en tienda</a><button class="btn sec" onclick="openNotes(\''+i.id+'\')">💬'+(itemNotes(i.id).length||'')+'</button><button class="btn sec" onclick="edit(\''+i.id+'\')">✏️</button><button class="btn sec" onclick="del(\''+i.id+'\')">🗑</button></div></div></article>';
+  '<div class="acts"><a class="btn" href="'+esc(i.url)+'" target="_blank" rel="noopener">Ver en tienda</a><button class="btn sec" onclick="openNotes(\''+i.id+'\')">💬'+(itemNotes(i.id).length||'')+'</button><button class="btn sec" onclick="Casa3D.place(\''+i.id+'\')">📍</button><button class="btn sec" onclick="edit(\''+i.id+'\')">✏️</button><button class="btn sec" onclick="del(\''+i.id+'\')">🗑</button></div></div></article>';
 }
 function group(name,its,idx){
   var h='<section class="cat'+(open[name]?' open':'')+'"><button onclick="tog('+idx+')">'+esc(name)+'<span>'+its.length+'<b class="arrow">⌄</b></span></button><div class="body">';
@@ -157,5 +157,7 @@ function delNote(id){if(confirm('¿Borrar tu nota?'))call('delNote',{id:id}).the
 document.addEventListener('visibilitychange',function(){if(!document.hidden&&code)refresh(true)});
 if(code)start();else showLogin();
 </script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="casa3d.js"></script>
 </body>
 </html>
